@@ -38,14 +38,14 @@ const userSchema = new Schema(
           ref: "Video",
         },
       ],
-      password: {
-        type: String,
-        required: [true, "Password is required"],
-        minlength: 6,
-      },
-      refreshTokens: {
-        type: String,
-      },
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: 6,
+    },
+    refreshTokens: {
+      type: String,
     },
   },
   {
@@ -53,14 +53,13 @@ const userSchema = new Schema(
   }
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.ismodified("password")) {
-    return next();
-  } else {
-    this.password = bcrypt.hash(this.password, 10);
-    next();
-  }
-});
+userSchema.pre("save", async function () {
+    if(!this.isModified("password")) return;
+
+    this.password = await bcrypt.hash(this.password, 10)
+    
+})
+
 
 userSchema.methods.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password);
