@@ -10,8 +10,8 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log(req.body);
   //validate the data
   if (
-    [userName, fullName, email, password].some((field) => !field ||
-      field?.trim() === ""
+    [userName, fullName, email, password].some(
+      (field) => !field || field?.trim() === ""
     )
   ) {
     throw new apiError(400, "all field are required");
@@ -28,22 +28,28 @@ const registerUser = asyncHandler(async (req, res) => {
   //check for image and avatar
   const avatarLocalPath = req.files?.avatar[0]?.path;
   console.log(avatarLocalPath);
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  //  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  let coverImageLocalPath;
+  if(req.files && req.files.coverImage && req.files.coverImage[0]){
+  coverImageLocalPath = req.files.coverImage[0].path
+  }
   if (!avatarLocalPath) {
     throw new apiError(400, "avatar1 is required");
   }
+  console.log("req files", req.files);
 
-  
   //upload cloudinary
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
- const coverImage = coverImageLocalPath
-  ? await uploadOnCloudinary(coverImageLocalPath)
-  : null;
+  const coverImage = coverImageLocalPath
+    ? await uploadOnCloudinary(coverImageLocalPath)
+    : null;
 
- if (!avatar || !avatar.secure_url) {
-  throw new apiError(400, "avatar upload failed");
-}
+  if (!avatar || !avatar.secure_url) {
+    throw new apiError(400, "avatar upload failed");
+  }
+  // console.log("cover image", coverImage);
+  // console.log("avatar", avatar);
 
   //create user
   const user = await User.create({
@@ -54,7 +60,7 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
     userName: userName.toLowerCase(),
   });
-console.log(user);
+  //remove password and refresh token
   const createdUser = await User.findById(user._id).select(
     "-password -refreshTokens"
   );
