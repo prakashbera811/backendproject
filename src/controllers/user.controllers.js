@@ -3,7 +3,7 @@ import { apiError } from "../utils/apiError.js";
 import User from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
-
+import jwt from "jsonwebtoken";
 //function to generate access and refresh token
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -144,7 +144,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: { refreshTokens: undefined },
+      $unset: { refreshTokens: 1 },
     },
     {
       new: true,
@@ -155,14 +155,58 @@ const logoutUser = asyncHandler(async (req, res) => {
   const option = {
     httpOnly: true,
     secure: true,
-    expires: new Date(0),
   };
 
   res
     .status(200)
-    .cookie("refreshToken", "", option)
-    .cookie("accessToken", "", option)
+    .clearCookie("refreshToken", "", option)
+    .clearCookie("accessToken", "", option)
     .json(new apiResponse(200, "user logged out successfully", null));
 });
 
-export { registerUser, loginUser };
+//access and refresh token generation function export
+
+const accessAndRefreshToken = asyncHandler(async (req, res) => {
+
+ const incomingRefreshToken = req.cookies?.refreshToken ||  req.body?.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new apiError(401, "unauthorized access, token missing");
+  }
+  //verify the token
+ try {
+   const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+   //check if user exists
+   const  user = await User.findById(decodedToken._id).select(
+     "-password -refreshTokens"
+   );
+   if (!user) {
+     throw new apiError(401, "unauthorized access, user not found");
+   }
+ 
+   if(user.refreshTokens !== incomingRefreshToken){
+     throw new apiError(401, "unauthorized access, invalid refresh token");
+   }
+ 
+   const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(user._id);
+   const option = {
+     httpOnly: true,
+     secure: true,
+   };
+   res
+     .status(200)
+     .cookie("refreshToken", newRefreshToken, option)
+     .cookie("accessToken", accessToken, option)
+     .json(
+       new apiResponse(200, "new access and refresh token generated successfully", {
+         accessToken,
+         refreshToken : newRefreshToken,
+       })
+     );
+ } catch (error) {
+  throw new apiError(401, "unauthorized access, invalid refresh token");
+ }
+  
+});
+
+export { registerUser, loginUser, logoutUser , accessAndRefreshToken};
