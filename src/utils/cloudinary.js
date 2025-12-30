@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
-
+import { upload } from "../middlewares/multer.middleware";
 // Configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -8,20 +8,19 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET, // Click 'View API Keys' above to copy your API secret
 });
 
-
-const uploadOnCloudinary =async (localFilePath) => {
+const uploadOnCloudinary = async (localFilePath) => {
   try {
-    if(!localFilePath) return null;
-    const response = cloudinary.uploader.upload(localFilePath, {resource_type:"auto" })
+    if (!localFilePath) return null;
+    const response = cloudinary.uploader.upload(localFilePath, {
+      resource_type: "auto",
+    });
     //file is uploaded on cloudinary
-    console.log("file is uploaded on cloudinary" ,response.url )
-    //fs.unlinkSync(localFilePath) // remove the locally saved temporary file after successful upload
-    return response
-    
-    
+    console.log("file is uploaded on cloudinary", response.url);
+    // fs.unlinkSync(upload.localFilePath) // remove the locally saved temporary file after successful upload
+    return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath) // remove the locally saved temporary as uploaded operation  got failed
+    fs.unlinkSync(upload.localFilePath); // remove the locally saved temporary as uploaded operation  got failed
   }
 };
 
-export {uploadOnCloudinary}
+export { uploadOnCloudinary };
