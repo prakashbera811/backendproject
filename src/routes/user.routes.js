@@ -5,6 +5,7 @@ import { loginUser } from "../controllers/user.controllers.js";
 import { logoutUser } from "../controllers/user.controllers.js";
 import { jwtVerify } from "../middlewares/auth.middlewares.js";
 import { accessAndRefreshToken } from "../controllers/user.controllers.js";
+import { updateUserAvatar } from "../controllers/user.controllers.js";
 const router = Router();
 
 //register user
@@ -31,5 +32,7 @@ router.route("/logout").post(jwtVerify, logoutUser);
 
 router.route("/accessAndRefreshToken").post(accessAndRefreshToken);
 
+//update avatar
+router.route("/updateAvatar").put(jwtVerify, upload.single("avatar"), updateUserAvatar);
 
 export default router;

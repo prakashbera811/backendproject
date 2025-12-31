@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
-import { upload } from "../middlewares/multer.middleware";
+import { upload } from "../middlewares/multer.middleware.js";
 // Configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,15 +11,15 @@ cloudinary.config({
 const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
-    const response = cloudinary.uploader.upload(localFilePath, {
+    const response =await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
     //file is uploaded on cloudinary
     console.log("file is uploaded on cloudinary", response.url);
-    // fs.unlinkSync(upload.localFilePath) // remove the locally saved temporary file after successful upload
+    fs.unlinkSync(localFilePath) // remove the locally saved temporary file after successful upload
     return response;
   } catch (error) {
-    fs.unlinkSync(upload.localFilePath); // remove the locally saved temporary as uploaded operation  got failed
+    fs.unlinkSync(localFilePath); // remove the locally saved temporary as uploaded operation  got failed
   }
 };
 

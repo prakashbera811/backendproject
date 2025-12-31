@@ -4,6 +4,7 @@ import User from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
+import {deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 //function to generate access and refresh token
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -70,7 +71,9 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     fullName,
     avatar: avatar.secure_url,
+    avatarPublicId: avatar.public_id,
     coverImage: coverImage?.secure_url || "",
+    coverImagePublicId: coverImage?.public_id || null,
     email,
     password,
     userName: userName.toLowerCase(),
@@ -291,16 +294,28 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!avatarLocalPath) {
     throw new apiError(400, "avatar image is required");
   }
+//delete previous avatar from cloudinary
+  const currentUser =  await User.findById(req.user?._id);
+  if(!currentUser){
+    throw new apiError(404, "user not found");
+  }
+  if(currentUser.avatarPublicId){
+    await deleteFromCloudinary(currentUser.avatarPublicId);
+  }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   if (!avatar || !avatar.secure_url) {
     throw new apiError(400, "avatar upload failed");
   }
+  
+
+  //new photo uploaded 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
         avatar: avatar.secure_url,
+        avatarPublicId: avatar.public_id,
       },
     },
     {
@@ -311,6 +326,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   if (!user) {
     throw new apiError(404, "user not found for avatar update");
   }
+
+
   res
     .status(200)
     .json(new apiResponse(200, "user avatar updated successfully", user));
